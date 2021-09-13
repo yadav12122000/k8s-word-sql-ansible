@@ -1,0 +1,81 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mysql-pv-claim
+  labels:
+    app: mysql
+  namespace: default
+spec:
+  storageClassName: ""
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 200Mi
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+        namespace: default
+        name: mysql-pv
+        labels:
+               app: mysql
+spec:
+    capacity:
+         storage: 200Mi
+    accessModes:
+        - ReadWriteOnce
+    volumeMode: Filesystem
+    storageClassName: ""
+    local:
+         path: /ly
+    nodeAffinity:
+            required:
+                    nodeSelectorTerms:
+                         - matchExpressions:
+                                 - key: kubernetes.io/hostname
+                                   operator: In
+                                   values:
+                                           - ip-172-31-40-47.ap-south-1.compute.internal
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  namespace: default
+  name: wordpress-mysql
+  labels:
+    app: mysql
+spec:
+  selector:
+    matchLabels:
+      app: mysql
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: mysql
+    spec:
+      containers:
+      - image: mysql:5.6
+        name: mysql
+        env:
+        - name: MYSQL_ROOT_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: mysecret
+              key: password
+        ports:
+        - containerPort: 3306
+          name: mysql
+        volumeMounts:
+        - name: mysql-persistent-storage
+          mountPath: /var/lib/mysql
+      volumes:
+      - name: mysql-persistent-storage
+        persistentVolumeClaim:
+          claimName: mysql-pv-claim
+
+

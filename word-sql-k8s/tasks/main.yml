@@ -1,0 +1,12 @@
+---
+# tasks file for word-sql-k8s
+- name: Create a k8s wordpress-mysql infrastructure
+  community.kubernetes.k8s:
+        state: present
+        src: "{{ item }}"
+  loop:
+            - /etc/ansible/roles/1-cluster/word-sql-k8s/templates/secret.yml
+            - /etc/ansible/roles/1-cluster/word-sql-k8s/templates/sql1.yml
+            - /etc/ansible/roles/1-cluster/word-sql-k8s/templates/sql-svc.yml
+            - /etc/ansible/roles/1-cluster/word-sql-k8s/templates/word.yml
+

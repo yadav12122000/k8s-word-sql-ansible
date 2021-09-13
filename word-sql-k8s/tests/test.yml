@@ -1,0 +1,10 @@
+---
+- hosts: localhost
+  vars_prompt:
+        - name: host
+          prompt: "provide the hostname/node name of the worker node "
+          private: no
+  tasks:
+      - name: run the role
+        include_role:
+                name: word-sql-k8s

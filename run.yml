@@ -1,0 +1,87 @@
+- hosts: localhost
+  vars:
+       no_of_inst: 1
+       tag_name: master-node
+  tasks:
+          - name: launch the master node
+            include_role: 
+               name: 1-aws
+- hosts: localhost
+  vars:
+    tag_name: worker-node
+  vars_prompt:
+    - name: no_of_inst
+      prompt: "Enter the number of slave nodes"
+      private: no
+  tasks: 
+  - name: launch worker node
+    include_role:
+      name: 1-aws
+
+  - meta: refresh_inventory
+  - pause:
+       seconds: 60
+
+- hosts: tag_Name_master_node
+  gather_facts: no
+  vars_prompt:
+        - name: public_ip
+          prompt: "Enter the public ip of master node"
+          private: no
+
+  tasks:
+  - name: configuring master
+    include_role:
+      name: master
+
+- hosts: tag_Name_worker_node
+  gather_facts: no
+  tasks:
+    - name: Create a directory in worker node
+      file:
+            path: /ly
+            state: directory
+            mode: '0777'
+
+    - name: configuring worker node
+      include_role:
+        name: worker
+
+- hosts: tag_Name_master_node
+  tasks:
+          - name: fetch the file to localhost
+            fetch:
+                    src: /etc/kubernetes/admin.conf
+                    dest: "{{ lookup('env','HOME') }}/.kube/config"
+                    flat: yes
+                    fail_on_missing: yes
+
+- hosts: localhost
+  gather_facts: no
+  vars_prompt:
+          - name: ip
+            prompt: "what is the master ip:"
+            private: no
+  tasks:
+          - lineinfile:
+                  path: /root/.kube/config
+                  regexp: 'server: '
+                  line: "    server: https://{{ ip }}:6443"
+                  firstmatch: yes
+                  state: present
+
+- hosts: localhost
+  gather_facts: no
+  vars_prompt:
+          - name: host
+            prompt: "provide the hostname/node name of the worker node "
+            private: no
+  tasks:
+          - name: fill the content of host
+            template:
+                   src: /etc/ansible/roles/1-cluster/word-sql-k8s/templates/sql.yml
+                   dest: /etc/ansible/roles/1-cluster/word-sql-k8s/templates/sql1.yml
+          - name: launch the wordpress-sql role
+            include_role:
+                    name: word-sql-k8s 
+

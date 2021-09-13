@@ -1,0 +1,20 @@
+- hosts: tag_Name_worker_node
+  tasks:
+    - name: Create a directory in worker node
+      file:
+            path: /ly
+            state: directory
+            mode: '0777'
+
+- hosts: localhost
+  tasks:
+          - name: Create a k8s wordpress-mysql infrastructure
+            community.kubernetes.k8s:
+                state: present
+                src: "{{ item }}"
+            loop:
+                   - secret.yml
+                   - sql.yml
+                   - sql-svc.yml
+                   - word.yml
+

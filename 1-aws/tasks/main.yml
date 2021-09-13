@@ -1,0 +1,79 @@
+---
+# tasks file for 1-aws
+- name: create the key pair
+  ec2_key:
+        name: k8s_test_key
+        state: present
+        profile: "default"
+  register: k8skey
+
+- debug:
+        var: k8skey
+- name: save the key to local
+  copy:
+    content: "{{ k8skey.key.private_key }}"
+    dest: "/etc/ansible/key/k8s_test_key.pem"
+    mode: '0400'
+  ignore_errors: yes
+  run_once: yes
+
+- name: create a security grp for ec2
+  ec2_group:
+          name: "sec_k8s"
+          description: Security grp for k8s
+          state: present
+          rules:
+                  - proto: tcp
+                    from_port: 22
+                    to_port: 22
+                    cidr_ip: 0.0.0.0/0
+          rules_egress:
+                  - proto: all
+                    cidr_ip: 0.0.0.0/0
+          profile: "default"
+  register: worker_sec
+- debug:
+   var: worker_sec
+
+
+
+- name: update the security grp with another grp rule
+  ec2_group:
+          name: "sec_k8s"
+          description: Security grp for k8s
+          state: present
+          rules:
+                  - proto: tcp
+                    ports:
+                            - 22
+                            - 6443
+                            - 30000-32767
+                    cidr_ip: 0.0.0.0/0
+                  - proto: all
+                    group_id: "{{ worker_sec.group_id }}"
+          rules_egress:
+                  - proto: all
+                    cidr_ip: 0.0.0.0/0
+          profile: "default"
+
+- name: create an ec2 instance
+  ec2:
+          #name: k8s_master
+          instance_type: t2.micro
+          image: ami-08e0ca9924195beba
+          key_name: "{{ k8skey.key.name }}"
+          group_id: "{{ worker_sec.group_id }}"
+          state: present
+          region: "ap-south-1"
+          instance_tags:
+            Name: "{{ tag_name }}"
+          vpc_subnet_id: "subnet-e8c2cb80"
+          count: "{{ no_of_inst }}"
+          wait: yes
+          assign_public_ip: yes
+          state: present
+          profile: "default"
+  register: ec2_status
+- debug:
+        var: ec2_status
+
