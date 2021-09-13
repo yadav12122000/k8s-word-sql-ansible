@@ -1,2 +1,2 @@
-Deploy wordpress integrated with MySQL using PV over AWS cloud[D[D[D[D[D[D[D[D[D[D[D[D[in a K8s cluster over AWS by Ansible.
+Deploy wordpress integrated with MySQL using PV in a K8s cluster over AWS by Ansible.
 Fully Automated...
